@@ -148,8 +148,116 @@ MoveActiveToDesktop(n) {
 #!o:: LaunchAndOrganize()
 #!p:: OrganizeOnly()
 
+; =====================================================
+; CLOSE ALL WINDOWS (Across All Virtual Desktops)
+; =====================================================
+
+GetWindowDesktopNumber(hwnd) => DllCall(DllPath "\GetWindowDesktopNumber", "Ptr", hwnd, "Int")
+
+CloseAllWindows() {
+    global DllPath
+
+    ; List of processes to exclude (system/shell processes)
+    excludeProcesses := ["explorer.exe", "SystemSettings.exe", "ShellExperienceHost.exe",
+        "SearchHost.exe", "StartMenuExperienceHost.exe", "TextInputHost.exe",
+        "AutoHotkey64.exe", "AutoHotkey32.exe", "AutoHotkey.exe",
+        "Taskmgr.exe", "ApplicationFrameHost.exe", "LockApp.exe",
+        "WindowsTerminal.exe", "powershell.exe", "cmd.exe"]
+
+    closedCount := 0
+    desktopCount := GetDesktopCount()
+    windowsToClose := []
+
+    ; Use EnumWindows to get ALL windows including those on other desktops
+    EnumWindowsProc := CallbackCreate(EnumWindowsCallback, "F", 2)
+
+    ; Create a structure to pass data to callback
+    global g_WindowsToClose := []
+    global g_ExcludeProcesses := excludeProcesses
+    global g_DesktopCount := desktopCount
+
+    ; EnumWindows enumerates all top-level windows on all desktops
+    DllCall("EnumWindows", "Ptr", EnumWindowsProc, "Ptr", 0)
+    CallbackFree(EnumWindowsProc)
+
+    ; Now close all collected windows
+    for hwnd in g_WindowsToClose {
+        try {
+            WinClose(hwnd)
+            closedCount++
+            Sleep 30
+        }
+    }
+
+    ; Cleanup globals
+    g_WindowsToClose := []
+
+    ; Show notification
+    if (closedCount > 0)
+        ToolTip("Closed " closedCount " window(s) across all desktops")
+    else
+        ToolTip("No windows to close")
+
+    SetTimer () => ToolTip(), -2000
+}
+
+EnumWindowsCallback(hwnd, lParam) {
+    global DllPath, g_WindowsToClose, g_ExcludeProcesses, g_DesktopCount
+
+    try {
+        ; Skip invisible windows
+        if !DllCall("IsWindowVisible", "Ptr", hwnd)
+            return true
+
+        ; Get window desktop number
+        windowDesktop := DllCall(DllPath "\GetWindowDesktopNumber", "Ptr", hwnd, "Int")
+
+        ; Skip windows not on any valid desktop (-1 means system window)
+        if (windowDesktop < 0 || windowDesktop >= g_DesktopCount)
+            return true
+
+        ; Get process name
+        try {
+            processName := WinGetProcessName(hwnd)
+        } catch {
+            return true
+        }
+
+        ; Skip excluded processes
+        for excluded in g_ExcludeProcesses {
+            if (StrLower(processName) = StrLower(excluded))
+                return true
+        }
+
+        ; Skip windows without titles
+        try {
+            title := WinGetTitle(hwnd)
+            if (title = "")
+                return true
+        } catch {
+            return true
+        }
+
+        ; Check if it's a real top-level window (has WS_VISIBLE and no owner)
+        style := DllCall("GetWindowLong", "Ptr", hwnd, "Int", -16, "Int")  ; GWL_STYLE
+        if !(style & 0x10000000)  ; WS_VISIBLE
+            return true
+
+        ; Check if window has an owner (skip owned windows like tooltips)
+        owner := DllCall("GetWindow", "Ptr", hwnd, "UInt", 4, "Ptr")  ; GW_OWNER
+        if (owner != 0)
+            return true
+
+        ; Add to list of windows to close
+        g_WindowsToClose.Push(hwnd)
+    }
+
+    return true  ; Continue enumeration
+}
+
 #!1:: MoveActiveToDesktop(0)
 #!2:: MoveActiveToDesktop(1)
 #!3:: MoveActiveToDesktop(2)
 #!4:: MoveActiveToDesktop(3)
 #!5:: MoveActiveToDesktop(4)
+#!q:: CloseAllWindows()
