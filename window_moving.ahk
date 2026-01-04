@@ -29,13 +29,13 @@ Apps := [{ name: "Chrome", exe: "chrome.exe", path: "C:\Program Files\Google\Chr
     fullscreen: true }, { name: "Cursor", exe: "Cursor.exe", path: "C:\Users\deepak_bhattarai\AppData\Local\Programs\cursor\Cursor.exe",
         desktop: 1, fullscreen: true }, { name: "Zen Browser", exe: "zen.exe", path: "C:\Program Files\Zen Browser\zen.exe",
             desktop: 2 }, { name: "Discord", exe: "Discord.exe", path: "C:\Users\deepak_bhattarai\AppData\Local\Discord\Update.exe",
-                args: "--processStart Discord.exe", desktop: 4 }, { name: "Raindrop", exe: "Raindrop.io.exe", path: "C:\Program Files\WindowsApps\19059Raindrop.io.Raindrop.io_5.6.76.0_x64__hghhavmbrcx2t\app\Raindrop.io.exe",
+                args: "--processStart Discord.exe", desktop: 4, systray: true }, { name: "Raindrop", exe: "Raindrop.io.exe",
+                    path: "C:\Program Files\WindowsApps\19059Raindrop.io.Raindrop.io_5.6.76.0_x64__hghhavmbrcx2t\app\Raindrop.io.exe",
                     desktop: 3, tile: "right" }, { name: "TickTick", exe: "TickTick.exe", path: "C:\Program Files (x86)\TickTick\TickTick.exe",
-                        desktop: 3, tile: "left" }
+                        desktop: 3, tile: "left", systray: true }
 ]
 
 ; =====================================================
-; HELPERS
 ; =====================================================
 
 EnsureDesktopsExist(count) {
@@ -46,8 +46,18 @@ EnsureDesktopsExist(count) {
 }
 
 LaunchApp(app) {
-    if ProcessExist(app.exe)
+    if ProcessExist(app.exe) {
+        if app.HasProp("systray") && app.systray {
+            try {
+                if app.HasProp("args")
+                    Run('"' app.path '" ' app.args)
+                else
+                    Run('"' app.path '"')
+
+            }
+        }
         return
+    }
     try {
         if app.HasProp("args")
             Run('"' app.path '" ' app.args)
