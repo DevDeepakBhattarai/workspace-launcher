@@ -5,7 +5,7 @@
 ; VirtualDesktopAccessor.dll
 ; =====================================================
 
-DllPath := A_ScriptDir "\VirtualDesktopAccessor.dll"
+DllPath := "d:\Coding\Scripts\VirtualDesktopAccessor.dll"
 
 if !FileExist(DllPath) {
     MsgBox(
@@ -26,9 +26,9 @@ MoveWindowToDesktopNumber(hwnd, n)
 ; =====================================================
 
 Apps := [{ name: "Chrome", exe: "chrome.exe", path: "C:\Program Files\Google\Chrome\Application\chrome.exe", desktop: 0,
-    fullscreen: true }, { name: "Cursor", exe: "Cursor.exe", path: "C:\Users\deepak_bhattarai\AppData\Local\Programs\cursor\Cursor.exe",
+    fullscreen: true }, { name: "Antigravity", exe: "Antigravity.exe", path: "C:\Users\deepak_bhattarai\AppData\Local\Programs\Antigravity\Antigravity.exe",
         desktop: 1, fullscreen: true }, { name: "Zen Browser", exe: "zen.exe", path: "C:\Program Files\Zen Browser\zen.exe",
-            desktop: 2 }, { name: "Discord", exe: "Discord.exe", path: "C:\Users\deepak_bhattarai\AppData\Local\Discord\Update.exe",
+            desktop: 2, fullscreen: true }, { name: "Discord", exe: "Discord.exe", path: "C:\Users\deepak_bhattarai\AppData\Local\Discord\Update.exe",
                 args: "--processStart Discord.exe", desktop: 4, systray: true }, { name: "Raindrop", exe: "Raindrop.io.exe",
                     path: "C:\Program Files\WindowsApps\19059Raindrop.io.Raindrop.io_5.6.76.0_x64__hghhavmbrcx2t\app\Raindrop.io.exe",
                     desktop: 3, tile: "right" }, { name: "TickTick", exe: "TickTick.exe", path: "C:\Program Files (x86)\TickTick\TickTick.exe",
