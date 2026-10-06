@@ -5,11 +5,10 @@ Persistent
 ; DJI Mic Mini receiver: VID 2CA3 / PID 4011.
 ; Its link/shutter button arrives as a HID Consumer Control Volume Up event.
 ; We correlate the raw HID source with the Volume_Up hotkey so only the DJI
-; single press becomes Win+Space; a double press toggles ChatGPT microphone
-; through Super App. Normal keyboard/headset volume keys keep working.
+; button becomes Win+Space; normal keyboard/headset volume keys keep working.
 
 global g_LastDjiConsumerInput := 0
-global g_PendingDjiPress := false
+global g_LastVoiceTrigger := 0
 global g_DeviceCache := Map()
 global g_RawInputGui := Gui("+ToolWindow -Caption")
 g_RawInputGui.Show("Hide")
@@ -95,31 +94,24 @@ IsDjiMicMiniDevice(hDevice) {
 }
 
 HandleVolumeUp() {
-    global g_LastDjiConsumerInput, g_PendingDjiPress
+    global g_LastDjiConsumerInput, g_LastVoiceTrigger
 
-    ; Give WM_INPUT time to identify the source device.
+    ; Give WM_INPUT a tiny window to identify the source device.
     Sleep 35
-    if (A_TickCount - g_LastDjiConsumerInput <= 180) {
-        if g_PendingDjiPress {
-            SetTimer SendDjiTranscription, 0
-            g_PendingDjiPress := false
-            SendEvent "^!+m"
-        } else {
-            g_PendingDjiPress := true
-            SetTimer SendDjiTranscription, -350
+    now := A_TickCount
+
+    if (now - g_LastDjiConsumerInput <= 180) {
+        ; Debounce the physical DJI button so one press cannot toggle voice input twice.
+        if (now - g_LastVoiceTrigger > 450) {
+            g_LastVoiceTrigger := now
+            SendEvent "#{Space}"
         }
-        ; Ignore key repeat until this physical press is released.
-        KeyWait "Volume_Up"
         return
     }
 
+    ; Preserve Volume Up from every non-DJI device. The $ hotkey prefix prevents
+    ; this synthetic event from recursively triggering this handler.
     SendEvent "{Volume_Up}"
 }
 
-SendDjiTranscription() {
-    global g_PendingDjiPress
-    if !g_PendingDjiPress
-        return
-    g_PendingDjiPress := false
-    SendEvent "#{Space}"
-}
+
